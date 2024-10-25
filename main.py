@@ -26,12 +26,11 @@ def build_weights(dimensions: tuple) -> list:
         
     return matrix
 
-def update_weights(neurons: list, old_weights: np.ndarray, learning_rate: float):
-    new = np.zeros(old_weights.shape)
+def update_weights(neurons: list, weights: list, learning_rate: float):
     for i in range(len(neurons)):
-        for j in range(len(old_weights[i])):
-            new[i][j] = old_weights[i][j] + learning_rate * neurons[i].error * neurons[i].entries[j] * ut.dev_tansig(neurons[i].output)
-    return new
+        for j in range(len(weights[i])):
+            weights[i][j] += learning_rate * neurons[i].error * neurons[i].entries[j] * ut.dev_tansig(neurons[i].output)
+
 
 def main():
     raw_data = np.array([
@@ -67,16 +66,16 @@ def main():
     traning_patterns = patterns[:int(len(patterns) * 0.7)]
     testing_patterns = patterns[int(len(patterns) * 0.7):]
 
-    red_dimensions = (2, 1, 1)
+    red_dimensions = (2, 12, 8, 5, 1)
 
     red = build_Network(red_dimensions)
     weights = build_weights(red_dimensions)
 
-    n = 0.3                                                                 #coeficiente de aprendizaje
+    n = 0.5                                                                 #coeficiente de aprendizaje
     tol = 10 ** -3                                                          #tolerancia
-    max_iter = 10_000                                                       #iteraciones maximas
+    max_iter = 15_000                                                       #iteraciones maximas
     epocas = 0                                                              #contador de epocas
-    err_pattern = [1 for _ in range(len(patterns))]                         #error inicial
+    err_pattern = [1 for _ in range(len(traning_patterns))]                 #error inicial
     err_by_epocas = []
 
     while ut.min_squares(err_pattern) >= tol and epocas < max_iter:
@@ -122,7 +121,7 @@ def main():
                             neurons[1][i].update_error(np.matrix(weights[-weight[0]]).T[i], [neuron.error for neuron in red[-weight[0]]])
                             neurons[1][i].update_bias(n)
 
-            new_weights = weights[:]
+            new_weights = weights.copy()
             for neurons, weight in zip(enumerate(red), enumerate(weights)):
                 match weight[0]:
                     case 0:
@@ -130,8 +129,8 @@ def main():
                             for j in range(len(weight[1][i])):
                                new_weights[weight[0]][i][j] += n * neurons[1][i].error * inputs[j] * ut.dev_tansig(neurons[1][i].output)
                     case _:
-                        new_weights[weight[0]] = update_weights(neurons[1], new_weights[weight[0]], n)
-            weights = new_weights[:]
+                        update_weights(neurons[1], new_weights[weight[0]], n)
+
 
     err_by_epocas.append(ut.min_squares(err_pattern))  
     print(f"Epoca: {epocas}")
