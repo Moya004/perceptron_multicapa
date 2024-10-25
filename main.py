@@ -1,6 +1,7 @@
 import numpy as np
 import utilities as ut
 import random as rd
+import matplotlib.pyplot as plt
 
 def normalize_patterns(patterns: list) -> list:
     return [((2 * (pattern[0] - 1) / 23) - 1, 2 * ((pattern[1] - 1) / 6) - 1, pattern[2]) for pattern in patterns]
@@ -74,7 +75,7 @@ def main():
 
     n = 0.3                                                                 #coeficiente de aprendizaje
     tol = 10 ** -3                                                          #tolerancia
-    max_iter = 10_000                                                       #iteraciones maximas
+    max_iter = 10_0                                                         #iteraciones maximas
     epocas = 0                                                              #contador de epocas
     err_pattern = [1 for _ in range(len(patterns))]                         #error inicial
     err_by_epocas = []
@@ -140,6 +141,41 @@ def main():
     for weight in weights:
         print(f'{weight}\n')
     print(']')
+    err_by_epocas.pop(0)
+    plt.xlabel('Epocas')
+    plt.ylabel('Error')
+    plt.title('Error por epoca')
+    plt.plot(err_by_epocas, label='Error', marker='o')
+    textstr = '\n'.join((
+        f'epoca: {weights}',
+        f'error: {err_by_epocas}',
+    ))
+    annot = plt.gca().annotate("", xy=(0,0), xytext=(20,20),
+                               textcoords='offset points',
+                               bbox=dict(boxstyle="round", fc="w"))
+    annot.set_visible(True)  
+    def update_annot(ind):
+        x, y = ind["ind"][0], err_by_epocas[ind["ind"][0]]
+        annot.xy = (x+1, y)
+        text = f"({x+1}, {y})"
+        annot.set_text(text)
+        annot.set_position((x + 0.1, y))
+    def hover(event):
+        vis = annot.get_visible()
+        if event.inaxes == plt.gca():
+            for line in plt.gca().get_lines():
+                cont, ind = line.contains(event)
+                if cont and ind is not None and len(ind["ind"]) > 0:
+                    update_annot(ind)
+                    annot.set_visible(True)
+                    plt.gcf().canvas.draw_idle()
+                    return
+            if vis:
+                annot.set_visible(False)
+                plt.gcf().canvas.draw_idle()
+
+    plt.gcf().canvas.mpl_connect("motion_notify_event", hover)    
+    plt.show()
 
 
 if __name__ == '__main__':
