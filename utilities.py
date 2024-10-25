@@ -14,7 +14,7 @@ class Neuron:
         self.entries: np.ndarray[float] = np.array([])
         self.fuction: function = activation
         self.output: float
-        self.error: float
+        self.error: float 
 
     def set_entries(self, entries: np.ndarray[float]):
         self.entries = entries
@@ -26,7 +26,7 @@ class Neuron:
         self.bias += learning_rate * self.error
 
     def update_error(self, weights: np.ndarray[float], error: np.ndarray[float]):
-        self.error = np.dot(weights, error)
+        self.error = float(np.dot(weights, error))
 
     def set_error(self, error: float):
         self.error = error
