@@ -1,18 +1,16 @@
 import numpy as np
 import utilities as ut
+import random as rd
 
 def normalize_patterns(patterns: list) -> list:
-    max_value = max([pattern[2] for pattern in patterns])
-    min_value = min([pattern[2] for pattern in patterns])
-
-    return [(((pattern[0] - 1) / 23), (pattern[1] - 1) / 6, (pattern[2] - min_value) / (max_value - min_value)) for pattern in patterns]
+    return [((2 * (pattern[0] - 1) / 23) - 1, 2 * ((pattern[1] - 1) / 6) - 1, pattern[2]) for pattern in patterns]
 
 def build_Network(dimensions: tuple, activation: ut.FunctionType = ut.tansig) -> list:
     network = []
     for i in range(1, len(dimensions)):
         layer = []
         for _ in range(dimensions[i]):
-            neuron = ut.Neuron(activation=activation, bias=np.random.uniform(0, 1))
+            neuron = ut.Neuron(activation=activation, bias=rd.uniform(-0.05, 0.05))
             layer.append(neuron)
         network.append(layer)
     return network
@@ -22,17 +20,18 @@ def build_weights(dimensions: tuple) -> list:
     for i in range(1, len(dimensions)):
         layer = []
         for _ in range(dimensions[i]):
-            weights = np.random.uniform(0, 1, dimensions[i - 1])
+            weights = np.random.uniform(-0.05, 0.05, dimensions[i - 1])
             layer.append(weights)
         matrix.append(np.array(layer))
         
     return matrix
 
-def update_weights(neurons: list, weights: list, learning_rate: float):
+def update_weights(neurons: list, old_weights: np.ndarray, learning_rate: float):
+    new = np.zeros(old_weights.shape)
     for i in range(len(neurons)):
-        for j in range(len(weights[i])):
-            weights[i][j] += learning_rate * neurons[i].error * neurons[i].entries[j] * ut.dev_tansig(neurons[i].output)
-
+        for j in range(len(old_weights[i])):
+            new[i][j] = old_weights[i][j] + learning_rate * neurons[i].error * neurons[i].entries[j] * ut.dev_tansig(neurons[i].output)
+    return new
 
 def main():
     raw_data = np.array([
@@ -61,13 +60,14 @@ def main():
         [1.989, 1.7085, 1.8582, 1.842, 1.5882, 1.958, 1.615],
         [1.808, 1.7, 1.7071, 1.793, 1.748, 1.49, 1.5651],
     ])
-
+    max_value = np.max(raw_data)
+    min_value = np.min(raw_data)
     patterns = [(fila + 1, columna + 1, valor) for fila, arr in enumerate(raw_data) for columna, valor in enumerate(arr)]
     patterns = normalize_patterns(patterns)
     traning_patterns = patterns[:int(len(patterns) * 0.7)]
     testing_patterns = patterns[int(len(patterns) * 0.7):]
 
-    red_dimensions = (2, 12, 8, 1)
+    red_dimensions = (2, 1, 1)
 
     red = build_Network(red_dimensions)
     weights = build_weights(red_dimensions)
@@ -77,9 +77,10 @@ def main():
     max_iter = 10_000                                                       #iteraciones maximas
     epocas = 0                                                              #contador de epocas
     err_pattern = [1 for _ in range(len(patterns))]                         #error inicial
-
+    err_by_epocas = []
 
     while ut.min_squares(err_pattern) >= tol and epocas < max_iter:
+        err_by_epocas.append(ut.min_squares(err_pattern))
         if epocas % 50 == 0:    
             print(f"Epoca: {epocas}")
             print(f"Error: {ut.min_squares(err_pattern)}")
@@ -105,7 +106,8 @@ def main():
                             neuron.set_entries([prev_neuron.output for prev_neuron in red[weight[0] - 1]])
                             neuron.calculate_output(w)
             
-            err = output - red[-1][0].output
+            denormalized_output = ( (red[-1][0].output + 1) * (max_value - min_value) ) / 2 + min_value
+            err = output - denormalized_output
             err_pattern.append(err)
 
             for neurons, weight in zip(enumerate(reversed(red)), enumerate(reversed(weights))):
@@ -120,7 +122,7 @@ def main():
                             neurons[1][i].update_error(np.matrix(weights[-weight[0]]).T[i], [neuron.error for neuron in red[-weight[0]]])
                             neurons[1][i].update_bias(n)
 
-            new_weights = weights.copy()
+            new_weights = weights[:]
             for neurons, weight in zip(enumerate(red), enumerate(weights)):
                 match weight[0]:
                     case 0:
@@ -128,10 +130,16 @@ def main():
                             for j in range(len(weight[1][i])):
                                new_weights[weight[0]][i][j] += n * neurons[1][i].error * inputs[j] * ut.dev_tansig(neurons[1][i].output)
                     case _:
-                        update_weights(neurons[1], new_weights[weight[0]], n)
+                        new_weights[weight[0]] = update_weights(neurons[1], new_weights[weight[0]], n)
+            weights = new_weights[:]
 
-                
-            
+    err_by_epocas.append(ut.min_squares(err_pattern))  
+    print(f"Epoca: {epocas}")
+    print(f"Error: {ut.min_squares(err_pattern)}")
+    print(f'Pesos: [')
+    for weight in weights:
+        print(f'{weight}\n')
+    print(']')
 
 
 if __name__ == '__main__':
