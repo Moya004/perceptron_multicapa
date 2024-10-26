@@ -1,8 +1,8 @@
 import numpy as np
 from types import FunctionType
-import mpmath as mp
 
-tansig = lambda x: 2 / (1 + mp.exp(-2*x)) - 1
+
+tansig = lambda x: 2 / (1 + np.exp(-2*x)) - 1
 dev_tansig = lambda x: 1 - tansig(x)**2
 min_squares = lambda x: sum(map(lambda y: y**2, x)) / 2
 

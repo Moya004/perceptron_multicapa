@@ -11,7 +11,7 @@ def build_Network(dimensions: tuple, activation: ut.FunctionType = ut.tansig) ->
     for i in range(1, len(dimensions)):
         layer = []
         for _ in range(dimensions[i]):
-            neuron = ut.Neuron(activation=activation, bias=rd.uniform(-0.05, 0.05))
+            neuron = ut.Neuron(activation=activation, bias=np.random.uniform(-0.05, 0.05))
             layer.append(neuron)
         network.append(layer)
     return network
@@ -67,14 +67,14 @@ def main():
     traning_patterns = patterns[:int(len(patterns) * 0.7)]
     testing_patterns = patterns[int(len(patterns) * 0.7):]
 
-    red_dimensions = (2, 12, 8, 5, 1)
+    red_dimensions = (2, 12, 8, 1)
 
     red = build_Network(red_dimensions)
     weights = build_weights(red_dimensions)
 
-    n = 0.5                                                                 #coeficiente de aprendizaje
+    n = 0.3                                                                 #coeficiente de aprendizaje
     tol = 10 ** -3                                                          #tolerancia
-    max_iter = 15_000                                                       #iteraciones maximas
+    max_iter = 10_000                                                       #iteraciones maximas
     epocas = 0                                                              #contador de epocas
     err_pattern = [1 for _ in range(len(traning_patterns))]                 #error inicial
     err_by_epocas = []
