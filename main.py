@@ -1,6 +1,5 @@
 import numpy as np
 import utilities as ut
-import random as rd
 import matplotlib.pyplot as plt
 
 def normalize_patterns(patterns: list) -> list:
@@ -64,8 +63,9 @@ def main():
     min_value = np.min(raw_data)
     patterns = [(fila + 1, columna + 1, valor) for fila, arr in enumerate(raw_data) for columna, valor in enumerate(arr)]
     patterns = normalize_patterns(patterns)
-    traning_patterns = patterns[:int(len(patterns) * 0.7)]
-    testing_patterns = patterns[int(len(patterns) * 0.7):]
+    traning_patterns_indeces = np.random.choice(len(patterns), int(len(patterns) * 0.7), replace=False)
+    traning_patterns = [patterns[i] for i in traning_patterns_indeces]
+    testing_patterns = [pattern for pattern in patterns if pattern not in traning_patterns]
 
 
     input_dimensions = [int(layer) for layer in input("Ingrese las dimensiones de las capas ocultas: ").split()]
@@ -76,7 +76,7 @@ def main():
 
     n = 0.3                                                                 #coeficiente de aprendizaje
     tol = 10 ** -3                                                          #tolerancia
-    max_iter = 10_000                                                       #iteraciones maximas
+    max_iter = 8_000                                                      #iteraciones maximas
     epocas = 0                                                              #contador de epocas
     err_pattern = [1 for _ in range(len(traning_patterns))]                 #error inicial
     err_by_epocas = []
@@ -146,38 +146,49 @@ def main():
     plt.xlabel('Epocas')
     plt.ylabel('Error')
     plt.title('Error por epoca')
-    plt.plot(err_by_epocas, label='Error', marker='o')
+    plt.plot(err_by_epocas, label='Error')
+    plt.text(0.5, 0.9, f'n: {n}', transform=plt.gca().transAxes)
+    plt.text(0.5, 0.85, f'Tolerancia: {tol}', transform=plt.gca().transAxes)
+    plt.text(0.5, 0.8, f'Dimensión de la Red: {red_dimensions}', transform=plt.gca().transAxes)
     textstr = '\n'.join((
         f'epoca: {weights}',
         f'error: {err_by_epocas}',
     ))
-    annot = plt.gca().annotate("", xy=(0,0), xytext=(20,20),
-                               textcoords='offset points',
-                               bbox=dict(boxstyle="round", fc="w"))
-    annot.set_visible(True)  
-    def update_annot(ind):
-        x, y = ind["ind"][0], err_by_epocas[ind["ind"][0]]
-        annot.xy = (x+1, y)
-        text = f"({x+1}, {y})"
-        annot.set_text(text)
-        annot.set_position((x + 0.1, y))
-    def hover(event):
-        vis = annot.get_visible()
-        if event.inaxes == plt.gca():
-            for line in plt.gca().get_lines():
-                cont, ind = line.contains(event)
-                if cont and ind is not None and len(ind["ind"]) > 0:
-                    update_annot(ind)
-                    annot.set_visible(True)
-                    plt.gcf().canvas.draw_idle()
-                    return
-            if vis:
-                annot.set_visible(False)
-                plt.gcf().canvas.draw_idle()
-
-    plt.gcf().canvas.mpl_connect("motion_notify_event", hover)    
+        
     plt.show()
+    day = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    for i in range(7):
+        test = []
+        expected = []
+        denormalized_hours = []
+        for pattern in filter(lambda x: round((( (x[1] + 1) *  6) / 2) + 1) == i+1, testing_patterns):
+            inputs = pattern[:2]
+            output = pattern[2]
 
+            for neurons, weight in zip(enumerate(red), enumerate(weights)):
+                match weight[0]:
+                    case 0:
+                        for neuron, w in zip(neurons[1], weight[1]):
+                            neuron.set_entries(inputs)
+                            neuron.calculate_output(w)
+                    case _:
+                        for neuron, w in zip(neurons[1], weight[1]):
+                            neuron.set_entries([prev_neuron.output for prev_neuron in red[weight[0] - 1]])
+                            neuron.calculate_output(w)
+
+            denormalized_output = ((red[-1][0].output + 1) * (max_value - min_value)) / 2 + min_value
+            denormalized_hour = (( (pattern[0] + 1) * 23) / 2) + 1
+            expected.append(pattern[2])
+            test.append(denormalized_output)
+            denormalized_hours.append(denormalized_hour)
+        plt.figure()
+        plt.plot(denormalized_hours, test ,label=f'Prediccion {day[i]}', color='red')
+        plt.plot(denormalized_hours, expected, label=f'Esperado {day[i]}')
+        plt.xlabel('Horas del dia')
+        plt.ylabel('consumo de energia')
+        plt.title(f'Consumo de energia por hora del dia {day[i]}')
+        plt.legend()
+        plt.show()
 
 if __name__ == '__main__':
     main()
