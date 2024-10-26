@@ -1,5 +1,6 @@
 import numpy as np
 import utilities as ut
+import os
 import matplotlib.pyplot as plt
 
 def normalize_patterns(patterns: list) -> list:
@@ -67,16 +68,16 @@ def main():
     traning_patterns = [patterns[i] for i in traning_patterns_indeces]
     testing_patterns = [pattern for pattern in patterns if pattern not in traning_patterns]
 
-
-    input_dimensions = [int(layer) for layer in input("Ingrese las dimensiones de las capas ocultas: ").split()]
+    raw_dimensions = input("Ingrese las dimensiones de la red: ")
+    input_dimensions = [int(layer) for layer in raw_dimensions.split()]
     red_dimensions = tuple([2] + input_dimensions + [1])
 
     red = build_Network(red_dimensions)
     weights = build_weights(red_dimensions)
 
-    n = 0.3                                                                 #coeficiente de aprendizaje
+    n = float(input("Ingrese el parametro n: "))                            #coeficiente de aprendizaje
     tol = 10 ** -3                                                          #tolerancia
-    max_iter = 8_000                                                      #iteraciones maximas
+    max_iter = 100                                                        #iteraciones maximas
     epocas = 0                                                              #contador de epocas
     err_pattern = [1 for _ in range(len(traning_patterns))]                 #error inicial
     err_by_epocas = []
@@ -154,7 +155,15 @@ def main():
         f'epoca: {weights}',
         f'error: {err_by_epocas}',
     ))
-        
+    
+    
+    # Create directory if it doesn't exist
+    directory = f'tests/{raw_dimensions}'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Save the plot
+    plt.savefig(f'{directory}/error.png')
     plt.show()
     day = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
     for i in range(7):
@@ -188,6 +197,14 @@ def main():
         plt.ylabel('consumo de energia')
         plt.title(f'Consumo de energia por hora del dia {day[i]}')
         plt.legend()
+        
+        # Create directory if it doesn't exist
+        directory = f'tests/{raw_dimensions}'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # Save the plot
+        plt.savefig(f'{directory}/{day[i]}.png')
         plt.show()
 
 if __name__ == '__main__':
