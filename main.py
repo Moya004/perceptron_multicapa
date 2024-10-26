@@ -67,7 +67,9 @@ def main():
     traning_patterns = patterns[:int(len(patterns) * 0.7)]
     testing_patterns = patterns[int(len(patterns) * 0.7):]
 
-    red_dimensions = (2, 12, 8, 1)
+
+    input_dimensions = [int(layer) for layer in input("Ingrese las dimensiones de las capas ocultas: ").split()]
+    red_dimensions = tuple([2] + input_dimensions + [1])
 
     red = build_Network(red_dimensions)
     weights = build_weights(red_dimensions)
